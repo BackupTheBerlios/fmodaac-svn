@@ -64,7 +64,7 @@ FMOD_CODEC_DESCRIPTION aaccodec =
 {
     "FMOD AAC Codec",   // Name.
     0x00010000,                         // Version 0xAAAABBBB   A = major, B = minor.
-    0,                                  // Don't force everything using this codec to be a strea,
+    0,                                  // Don't force everything using this codec to be a stream,
 	FMOD_TIMEUNIT_PCMBYTES,             // The time format we would like to accept into setposition/getposition.
     &aacopen,                           // Open callback.
     &aacclose,                          // Close callback.
@@ -75,12 +75,6 @@ FMOD_CODEC_DESCRIPTION aaccodec =
     0                                   // Sound create callback (don't need it)
 };
 
-
-/*
-    FMODGetCodecDescription is mandatory for every fmod plugin.  This is the symbol the registerplugin function searches for.
-    Must be declared with F_API to make it export as stdcall.
-    MUST BE EXTERN'ED AS C!  C++ functions will be mangled incorrectly and not load in fmod.
-*/
 
 static int get_AAC_format(info* x)
 {
@@ -99,6 +93,13 @@ static int get_AAC_format(info* x)
 	} while (++a<x->fbuflen-4);
 	return -1;
 }
+
+/*
+FMODGetCodecDescription is mandatory for every fmod plugin.  This is the symbol the registerplugin function searches for.
+Must be declared with F_API to make it export as stdcall.
+MUST BE EXTERN'ED AS C!  C++ functions will be mangled incorrectly and not load in fmod.
+*/
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -130,6 +131,8 @@ static FMOD_CODEC_WAVEFORMAT    aacwaveformat;
 
 FMOD_RESULT F_CALLBACK aacopen(FMOD_CODEC_STATE *codec, FMOD_MODE usermode, FMOD_CREATESOUNDEXINFO *userexinfo)
 {
+	if(!codec) return FMOD_ERR_INTERNAL;
+
     aacwaveformat.channels     = 2;
     aacwaveformat.format       = FMOD_SOUND_FORMAT_PCM16;
     aacwaveformat.frequency    = 44100;
@@ -139,18 +142,19 @@ FMOD_RESULT F_CALLBACK aacopen(FMOD_CODEC_STATE *codec, FMOD_MODE usermode, FMOD
     codec->numsubsounds = 0;                    /* number of 'subsounds' in this sound.  For most codecs this is 0, only multi sound codecs such as FSB or CDDA have subsounds. */
     codec->waveformat   = &aacwaveformat;
 
-	unsigned int readBytes;
-
+	unsigned int readBytes = 0;
+	FMOD_RESULT r;
 	info* x = new info;
+	if (!x) return FMOD_ERR_INTERNAL;
 	memset(x,0,sizeof(info));
 
 	codec->plugindata = x;   /* user data value */
 	
-	if (FMOD_ERR_FILE_COULDNOTSEEK == codec->fileread(codec->filehandle,x->fbuf+x->fbuflen,BUFFER_SIZE-x->fbuflen,&readBytes,0))
+	r = codec->fileread(codec->filehandle, x->fbuf, BUFFER_SIZE, &readBytes,0);
+
+	if (r != FMOD_OK || readBytes == 0)
 		return FMOD_ERR_FILE_EOF;
 
-	if(readBytes == 0)
-		return FMOD_ERR_FILE_EOF;
 	x->fbuflen += readBytes;
 	x->initbytes = 0;
 	if(get_AAC_format(x) == -1)
@@ -159,21 +163,30 @@ FMOD_RESULT F_CALLBACK aacopen(FMOD_CODEC_STATE *codec, FMOD_MODE usermode, FMOD
 	if(! (x->neaac = NeAACDecOpen()))
 		return FMOD_ERR_INTERNAL;
 
-	memmove(x->fbuf,x->fbuf+x->initbytes,BUFFER_SIZE-x->initbytes);
+	if (x->initbytes < 0 || x->initbytes > BUFFER_SIZE)
+		return FMOD_ERR_INTERNAL;
+
+	memmove(x->fbuf, x->fbuf + x->initbytes, BUFFER_SIZE - x->initbytes);
 	x->fbuflen -= x->initbytes;
-	if (FMOD_ERR_FILE_COULDNOTSEEK == codec->fileread(codec->filehandle,x->fbuf+x->fbuflen,BUFFER_SIZE-x->fbuflen,&readBytes,0))
+
+	r = codec->fileread(codec->filehandle, x->fbuf + x->fbuflen, BUFFER_SIZE - x->fbuflen, &readBytes,0);
+	if (r != FMOD_OK)
 		return FMOD_ERR_FILE_EOF;
 
 	x->fbuflen += readBytes;
 
-	long byt = NeAACDecInit(x->neaac,x->fbuf,x->fbuflen,&x->sr,&x->nch);
+	long byt = NeAACDecInit(x->neaac, x->fbuf, x->fbuflen, &x->sr, &x->nch);
 	if (byt < 0)
-		return FMOD_ERR_FILE_BAD;
+		return FMOD_ERR_INTERNAL;
+	if (byt > 0) {
+		memmove(x->fbuf, x->fbuf + byt, BUFFER_SIZE - byt);
+		x->fbuflen -= byt;
+	}
 
-	NeAACDecConfigurationPtr config=NeAACDecGetCurrentConfiguration(x->neaac);
-	config->outputFormat=FAAD_FMT_16BIT;
-	config->defSampleRate=44100;
-	NeAACDecSetConfiguration(x->neaac,config);
+	NeAACDecConfigurationPtr config = NeAACDecGetCurrentConfiguration(x->neaac);
+	config->outputFormat = FAAD_FMT_16BIT;
+	config->defSampleRate = 44100;
+	NeAACDecSetConfiguration(x->neaac, config);
     return FMOD_OK;
 }
 
@@ -190,11 +203,14 @@ FMOD_RESULT F_CALLBACK aacclose(FMOD_CODEC_STATE *codec)
 FMOD_RESULT F_CALLBACK aacread(FMOD_CODEC_STATE *codec, void *buffer, unsigned int size, unsigned int *read)
 {
 	if(size < 4096*2) {
-		memset(buffer,0,size);
+		memset(buffer, 0, size);
 		*read = size;
 		return FMOD_OK;
 	}
 	info* x = (info*)codec->plugindata;
+	if(!x || !read)
+		return FMOD_ERR_INTERNAL;
+
 	void* buf = NULL;
 	unsigned int buflen = 0;
 	unsigned int r;
@@ -206,17 +222,22 @@ FMOD_RESULT F_CALLBACK aacread(FMOD_CODEC_STATE *codec, void *buffer, unsigned i
 		do {
 			r = 0;
 			FMOD_RESULT res;
-			res = codec->fileread(codec->filehandle,x->fbuf+x->fbuflen,BUFFER_SIZE-x->fbuflen,&r,0);
-			if (FMOD_ERR_FILE_EOF == res)
+			res = codec->fileread(codec->filehandle, x->fbuf + x->fbuflen, BUFFER_SIZE - x->fbuflen, &r, 0);
+			if (res == FMOD_ERR_FILE_EOF)
 				eof = true;
+			else if(res != FMOD_OK)
+				return FMOD_ERR_INTERNAL;
+
 			x->fbuflen += r;
-			buf = NeAACDecDecode(x->neaac,&info,x->fbuf,x->fbuflen);
+			buf = NeAACDecDecode(x->neaac, &info, x->fbuf, x->fbuflen);
 			x->fbuflen -= info.bytesconsumed;
-			memmove(x->fbuf,x->fbuf+info.bytesconsumed,x->fbuflen); // shift remaining data to start of buffer
+			memmove(x->fbuf, x->fbuf + info.bytesconsumed, x->fbuflen); // shift remaining data to start of buffer
 			if (info.error != 0) return FMOD_ERR_FILE_BAD;
 		} while (!info.samples || eof);
 		if(info.samples != 0) {
-			memcpy((unsigned char*)buffer+buflen,buf,info.samples*2);
+			if (!buf)
+				return FMOD_ERR_INTERNAL;
+			memcpy((unsigned char*)buffer + buflen, buf, info.samples*2);
 			buflen += info.samples*2;
 		}
 	}
@@ -227,6 +248,6 @@ FMOD_RESULT F_CALLBACK aacread(FMOD_CODEC_STATE *codec, void *buffer, unsigned i
 
 FMOD_RESULT F_CALLBACK aacsetposition(FMOD_CODEC_STATE *codec, int subsound, unsigned int position, FMOD_TIMEUNIT postype)
 {
-	return FMOD_OK; //FMOD_ERR_FILE_COULDNOTSEEK;
+	return FMOD_OK; FMOD_ERR_FILE_COULDNOTSEEK;
 }
 
