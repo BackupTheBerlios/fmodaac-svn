@@ -75,7 +75,7 @@
 				Name="VCLinkerTool"
 				IgnoreImportLibrary="true"
 				AdditionalDependencies="libfaad.lib"
-				OutputFile="codec_aac.dll"
+				OutputFile=".\Debug\codec_aac.dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="&quot;Z:\Dokumente\C++\faad2\libfaad\Debug&quot;"
@@ -107,7 +107,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy codec_aac.dll &quot;..\T4EPlayer\plugins\&quot;"
+				CommandLine="copy .\Debug\codec_aac.dll &quot;..\T4EPlayer\plugins\&quot;"
 			/>
 		</Configuration>
 		<Configuration
@@ -174,7 +174,7 @@
 				Name="VCLinkerTool"
 				IgnoreImportLibrary="true"
 				AdditionalDependencies="libfaad.lib"
-				OutputFile="codec_aac.dll"
+				OutputFile=".\Release\codec_aac.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="&quot;Z:\Dokumente\C++\faad2\libfaad\Release&quot;"
@@ -210,13 +210,53 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy codec_aac.dll &quot;..\T4EPlayer\plugins\&quot;"
+				CommandLine="copy .\Release\codec_aac.dll &quot;..\T4EPlayer\plugins\&quot;"
 			/>
 		</Configuration>
 	</Configurations>
 	<References>
 	</References>
 	<Files>
+		<Filter
+			Name="Controls"
+			>
+			<File
+				RelativePath="..\T4EPlayer\include\T4EButton.h"
+				>
+			</File>
+			<File
+				RelativePath="..\T4EPlayer\include\T4EControl.h"
+				>
+			</File>
+			<File
+				RelativePath="..\T4EPlayer\include\T4EControlList.h"
+				>
+			</File>
+			<File
+				RelativePath="..\T4EPlayer\include\T4EPicture.h"
+				>
+			</File>
+			<File
+				RelativePath="..\T4EPlayer\include\T4ESlider.h"
+				>
+			</File>
+			<File
+				RelativePath="..\T4EPlayer\include\T4ESpectrum.h"
+				>
+			</File>
+			<File
+				RelativePath="..\T4EPlayer\include\T4EText.h"
+				>
+			</File>
+			<File
+				RelativePath="..\T4EPlayer\include\T4ETicker.h"
+				>
+			</File>
+			<File
+				RelativePath="..\T4EPlayer\include\T4ETickerText.h"
+				>
+			</File>
+		</Filter>
 		<File
 			RelativePath=".\codec_aac.rc"
 			>
