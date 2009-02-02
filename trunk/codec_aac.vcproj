@@ -217,46 +217,6 @@
 	<References>
 	</References>
 	<Files>
-		<Filter
-			Name="Controls"
-			>
-			<File
-				RelativePath="..\T4EPlayer\include\T4EButton.h"
-				>
-			</File>
-			<File
-				RelativePath="..\T4EPlayer\include\T4EControl.h"
-				>
-			</File>
-			<File
-				RelativePath="..\T4EPlayer\include\T4EControlList.h"
-				>
-			</File>
-			<File
-				RelativePath="..\T4EPlayer\include\T4EPicture.h"
-				>
-			</File>
-			<File
-				RelativePath="..\T4EPlayer\include\T4ESlider.h"
-				>
-			</File>
-			<File
-				RelativePath="..\T4EPlayer\include\T4ESpectrum.h"
-				>
-			</File>
-			<File
-				RelativePath="..\T4EPlayer\include\T4EText.h"
-				>
-			</File>
-			<File
-				RelativePath="..\T4EPlayer\include\T4ETicker.h"
-				>
-			</File>
-			<File
-				RelativePath="..\T4EPlayer\include\T4ETickerText.h"
-				>
-			</File>
-		</Filter>
 		<File
 			RelativePath=".\codec_aac.rc"
 			>
