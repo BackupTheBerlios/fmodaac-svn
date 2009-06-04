@@ -210,7 +210,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy .\Release\codec_aac.dll &quot;..\T4EPlayer\plugins\&quot;"
+				CommandLine="copy .\Release\codec_aac.dll &quot;..\release\plugins\&quot;"
 			/>
 		</Configuration>
 	</Configurations>

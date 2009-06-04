@@ -202,11 +202,13 @@ FMOD_RESULT F_CALLBACK aacclose(FMOD_CODEC_STATE *codec)
 
 FMOD_RESULT F_CALLBACK aacread(FMOD_CODEC_STATE *codec, void *buffer, unsigned int size, unsigned int *read)
 {
+	memset(buffer, 0, size);
+
 	if(size < 4096*2) {
-		memset(buffer, 0, size);
 		*read = size;
 		return FMOD_OK;
 	}
+
 	info* x = (info*)codec->plugindata;
 	if(!x || !read)
 		return FMOD_ERR_INTERNAL;
@@ -230,9 +232,16 @@ FMOD_RESULT F_CALLBACK aacread(FMOD_CODEC_STATE *codec, void *buffer, unsigned i
 
 			x->fbuflen += r;
 			buf = NeAACDecDecode(x->neaac, &info, x->fbuf, x->fbuflen);
-			x->fbuflen -= info.bytesconsumed;
-			memmove(x->fbuf, x->fbuf + info.bytesconsumed, x->fbuflen); // shift remaining data to start of buffer
-			if (info.error != 0) return FMOD_ERR_FILE_BAD;
+			if (info.error != 0) {
+				*read = 0;
+				return FMOD_ERR_FILE_BAD;
+			}
+			if (info.bytesconsumed > x->fbuflen) {
+				x->fbuflen = 0;
+			} else {
+				x->fbuflen -= info.bytesconsumed;
+				memmove(x->fbuf, x->fbuf + info.bytesconsumed, x->fbuflen); // shift remaining data to start of buffer
+			}
 		} while (!info.samples || eof);
 		if(info.samples != 0) {
 			if (!buf)
