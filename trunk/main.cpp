@@ -64,7 +64,7 @@ FMOD_CODEC_DESCRIPTION aaccodec =
 {
     "FMOD AAC Codec",   // Name.
     0x00010000,                         // Version 0xAAAABBBB   A = major, B = minor.
-    0,                                  // Don't force everything using this codec to be a stream,
+    1,                                  // Force everything using this codec to be a stream,
 	FMOD_TIMEUNIT_PCMBYTES,             // The time format we would like to accept into setposition/getposition.
     &aacopen,                           // Open callback.
     &aacclose,                          // Close callback.
